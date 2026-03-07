@@ -69,9 +69,9 @@ class _HomeScreenState extends State<HomeScreen> {
           height: 200,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: _allMovies.length,
+            itemCount: movies.length,
             itemBuilder: (context, index) {
-              final Movie movie = _allMovies[index];
+              final Movie movie = movies[index];
               return Padding(
                 padding: EdgeInsets.all(8.0),
                 child: Column(

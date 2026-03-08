@@ -6,7 +6,7 @@ class Movie{
   final String backdropPath;
   final String releaseDate;
   final double voteAverage;
-  final String imgurl = "https://image.tmdb.org/t/p/w500";
+  final String imgurl = "https://image.tmdb.org/t/p/w500/";
 
   Movie({
     required this.id,

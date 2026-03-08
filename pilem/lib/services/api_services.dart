@@ -22,7 +22,7 @@ class ApiServices {
   }
   // Get All Popular Movie
   Future<List<Map<String, dynamic>>> getPopularMovies() async{
-    String url = "${baseUrl}popular";
+    String url = "${baseUrl}movie/popular";
     final response = await http.get(Uri.parse("$url?api_key=$apiKey"));
     final data = json.decode(response.body);
     return List<Map<String,dynamic>>.from(data['results']);

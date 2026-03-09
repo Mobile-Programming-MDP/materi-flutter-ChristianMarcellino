@@ -19,6 +19,7 @@ class DetailScreen extends StatelessWidget {
             children: [
               Image.network(
                 movie.imgurl+movie.backdropPath,
+                errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size:300),
                 height: 300,
                 width: double.infinity,
                 fit: BoxFit.cover,

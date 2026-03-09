@@ -8,7 +8,58 @@ class DetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
+      appBar: AppBar(
+        title: Text(movie.title),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Image.network(
+                movie.imgurl+movie.backdropPath,
+                height: 300,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                movie.overview,
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Icon(Icons.calendar_month, color: Colors.blue),
+                  SizedBox(width: 10),
+                  Text(
+                    "Release Date : ",
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(width: 10),
+                  Text(movie.releaseDate),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.star,
+                    color: Colors.amber,
+                  ),
+                  const SizedBox(width: 10,),
+                  const Text(
+                    'Rating : ',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(movie.voteAverage.toString()),],
+              )
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -92,7 +92,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     child: ListTile(
                       leading: Image.network(
                         movie.imgurl + movie.posterPath,
-                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 150,),
+                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 50,),
                         width: 50,
                         height: 50,
                         fit: BoxFit.cover,

@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "308167718413",
+    "firebase_url": "https://first-app-ef671-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "first-app-ef671",
+    "storage_bucket": "first-app-ef671.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:308167718413:android:7a9002332594c704b58744",
+        "android_client_info": {
+          "package_name": "com.example.daftar_belanja"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUtJNm9kMqbtgNoUvDLC_S7tLqTXdKld0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:308167718413:android:9c9c76d6b51be2bdb58744",
+        "android_client_info": {
+          "package_name": "com.example.laporwarga"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUtJNm9kMqbtgNoUvDLC_S7tLqTXdKld0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

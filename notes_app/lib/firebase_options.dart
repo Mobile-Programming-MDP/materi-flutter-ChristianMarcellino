@@ -66,4 +66,5 @@ class DefaultFirebaseOptions {
     projectId: 'notes-4a4b7',
     storageBucket: 'notes-4a4b7.firebasestorage.app',
   );
+
 }

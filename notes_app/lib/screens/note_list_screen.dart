@@ -1,6 +1,5 @@
 
-import 'dart:typed_data';
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:notes_app/services/note_service.dart';
 import 'package:notes_app/widgets/note_dialog.dart';
@@ -31,7 +30,6 @@ class _NoteListScreenState extends State<NoteListScreen> {
 
 class NoteList extends StatelessWidget {
   const NoteList({super.key});
-
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
@@ -57,7 +55,7 @@ class NoteList extends StatelessWidget {
                       showDialog(
                         context: context,
                         builder: (context) {
-                          return Text("Test");
+                          return NoteDialog(note: document,);
                         }
                       );
                     },
@@ -70,7 +68,7 @@ class NoteList extends StatelessWidget {
                             topRight: Radius.circular(16)
                           ),
                           child: Image.memory(
-                            document.imageBase64 as Uint8List,
+                            base64Decode(document.imageBase64!),
                             fit: BoxFit.cover,
                             alignment: Alignment.center,
                             width: double.infinity,
@@ -96,6 +94,16 @@ class NoteList extends StatelessWidget {
                                       child: const Text("Cancel")),
                                       TextButton(
                                         onPressed: (){
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                "Data berhasil dihapus",
+                                              ),
+                                              backgroundColor: const Color(0xFF1B5E20),
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                            ),
+                                          );
                                           NoteService.deleteNote(document).whenComplete(()=> Navigator.of(context).pop());
                                         } , 
                                         child: const Text("Hapus"))

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:notes_app/models/note.dart';
 import 'package:notes_app/services/note_service.dart';
@@ -34,19 +35,24 @@ class _NoteDialogState extends State<NoteDialog> {
     super.initState();
   }
 
-  Future<void> pickAndConvertImage() async {
+  Future<void> pickAndConvertThenCompressImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
 
     if (image != null) {
       final bytes = await image.readAsBytes();
 
-      final base64Str = base64Encode(bytes);
+      var result = await FlutterImageCompress.compressWithList(
+        bytes,
+        quality: 80,
+        minHeight: 1080,
+        minWidth: 1920
+      );
 
-      final decodedBytes = base64Decode(base64Str);
+      final encodedResult = base64Encode(result);
 
       setState(() {
-        _base64Image = base64Str;
-        _imageBytes = decodedBytes;
+        _base64Image = encodedResult;
+        _imageBytes = result;
       });
     }
   }
@@ -116,7 +122,7 @@ class _NoteDialogState extends State<NoteDialog> {
                 : Center(child: Text("No image selected")),
           ),
           ElevatedButton(
-            onPressed: pickAndConvertImage,
+            onPressed: pickAndConvertThenCompressImage,
             child: Text("Pick Image"),
           ),
           SizedBox(height: 8),

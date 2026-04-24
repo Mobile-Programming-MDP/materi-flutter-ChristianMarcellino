@@ -3,9 +3,11 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:notes_app/models/note.dart';
 import 'package:notes_app/services/note_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class NoteDialog extends StatefulWidget {
   final Note? note;
@@ -22,15 +24,21 @@ class _NoteDialogState extends State<NoteDialog> {
   Uint8List? _imageBytes;
   bool _isEdit = false;
   final ImagePicker _picker = ImagePicker();
+  String? _latitude;
+  String? _longitude;
 
   @override
   void initState() {
     if (widget.note != null) {
       _titleController.text = widget.note!.title;
       _descriptionController.text = widget.note!.description;
-      _imageBytes = base64Decode(widget.note!.imageBase64!);
+      if (widget.note?.imageBase64 != null) {
+        _imageBytes = base64Decode(widget.note!.imageBase64!);
+      }
       _isEdit = true;
-      _base64Image = widget.note!.imageBase64!;
+      _base64Image = widget.note!.imageBase64;
+      _latitude = widget.note!.latitude;
+      _longitude = widget.note!.longitude;
     }
     super.initState();
   }
@@ -44,8 +52,8 @@ class _NoteDialogState extends State<NoteDialog> {
       var result = await FlutterImageCompress.compressWithList(
         bytes,
         quality: 80,
-        minHeight: 1080,
-        minWidth: 1920
+        minWidth: 1280,
+        minHeight: 1280,
       );
 
       final encodedResult = base64Encode(result);
@@ -54,6 +62,60 @@ class _NoteDialogState extends State<NoteDialog> {
         _base64Image = encodedResult;
         _imageBytes = result;
       });
+    }
+  }
+
+  Future<void> getLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Layanan Lokasi Tidak Aktif ")));
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.deniedForever) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Akses Ditolak")));
+          return;
+        }
+      }
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: LocationSettings(accuracy: LocationAccuracy.high),
+      ).timeout(const Duration(seconds: 10));
+
+      setState(() {
+        _latitude = position.latitude.toString();
+        _longitude = position.longitude.toString();
+      });
+    } catch (e) {
+      debugPrint("Failed to retrieve location : $e");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Gagal mengambil lokasi.")));
+      setState(() {
+        _latitude = null;
+        _longitude = null;
+      });
+    }
+  }
+
+  Future<void> openMap() async {
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$_latitude,$_longitude',
+    );
+
+    final success = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!mounted) return;
+    if (!success) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Gagal membuka maps")));
     }
   }
 
@@ -75,6 +137,8 @@ class _NoteDialogState extends State<NoteDialog> {
       title: _titleController.text,
       description: _descriptionController.text,
       imageBase64: _base64Image,
+      latitude: _latitude,
+      longitude: _longitude,
     );
 
     _isEdit
@@ -125,6 +189,18 @@ class _NoteDialogState extends State<NoteDialog> {
             onPressed: pickAndConvertThenCompressImage,
             child: Text("Pick Image"),
           ),
+          SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: () async {
+              getLocation();
+            },
+            child: Text("Get Current Location"),
+          ),
+          if (_latitude != null && _longitude != null)
+            Text('Location: ($_latitude, $_longitude)'),
+
+          if (_latitude != null && _longitude != null)
+            TextButton(onPressed: openMap, child: const Text('Open in Maps')),
           SizedBox(height: 8),
           ElevatedButton(
             onPressed: () {

@@ -18,8 +18,7 @@ class AddPostScreen extends StatefulWidget {
 
 class _AddPostScreenState extends State<AddPostScreen> {
   @override
-  Widget build(BuildContext context) {
-    final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
     final ImagePicker _picker = ImagePicker();
     String? _image;
     Uint8List? _imageBytes;
@@ -120,6 +119,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
+      return;
     }
 
     final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -164,6 +164,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
     }
 
     }
+  Widget build(BuildContext context) {
+    
 
     return Scaffold(
       appBar: AppBar(

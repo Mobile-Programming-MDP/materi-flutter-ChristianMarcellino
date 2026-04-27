@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:fasum_app/models/post.dart';
 import 'package:fasum_app/services/fasum_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -50,11 +49,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
         });
       }
     }
-
-    Future<void> getLocation () async {
-
-    }
-
+    
     void _showCategorySelector(){
       showModalBottomSheet(context: context, builder: (context) {
         return ListView(
@@ -152,7 +147,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
           backgroundColor: const Color(0xFF1B5E20),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
+        ),  
       );
       });
     }catch(e){
@@ -168,13 +163,42 @@ class _AddPostScreenState extends State<AddPostScreen> {
       );
     }
 
-    _descriptionController.clear();
     }
 
-    return const Scaffold(
-      appBar: ,
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Post Cepu"),
+      ),
       body: Column(
-        
+        children: [
+          TextFormField(
+            controller: _descriptionController,
+          ),
+          TextButton(onPressed: (){
+            _showCategorySelector();
+          }, child: Text("Category")),
+          Expanded(
+            child: _imageBytes != null
+                ? Image.memory(_imageBytes!, fit: BoxFit.cover, height: 150)
+                : Center(child: Text("No image selected")),
+          ),
+          ElevatedButton(
+            onPressed: pickAndConvertThenCompressImage,
+            child: Text("Pick Image"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              _getLocation();
+            },
+            child: Text("Get Current Location"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              _submit();
+            },
+            child: Text("Submit"),
+          )
+        ],
       ),
     );
   }

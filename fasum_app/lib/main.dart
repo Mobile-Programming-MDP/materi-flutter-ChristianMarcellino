@@ -20,7 +20,7 @@ class MyApp extends StatelessWidget {
       title: "Fasum App",
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurpleAccent),
         useMaterial3: true,
       ),
       home: StreamBuilder(

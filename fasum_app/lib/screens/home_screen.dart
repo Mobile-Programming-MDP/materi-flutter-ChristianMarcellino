@@ -1,3 +1,4 @@
+import 'package:fasum_app/screens/add_post_screen.dart';
 import 'package:fasum_app/screens/sign_in_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Home Screen"),
+        title: const Text("Cepu App"),
         actions: [
           IconButton(onPressed: (){_signout();}, icon: Icon(Icons.logout), tooltip: "Sign Out",)
         ],
@@ -33,6 +34,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-    );
+      floatingActionButton: FloatingActionButton(onPressed: (){
+        showDialog(context: context, builder: (context) {
+          return const AddPostScreen();
+        },);
+      }, child: Icon(Icons.add),
+    ));
   }
 }

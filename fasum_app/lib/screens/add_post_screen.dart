@@ -109,6 +109,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
         _latitude = position.latitude.toString();
         _longitude = position.longitude.toString();
       });
+      _isGettingLocation = false;
+
     } catch (e) {
       setState(() {
           _isGettingLocation = false;

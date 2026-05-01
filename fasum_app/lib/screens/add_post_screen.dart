@@ -17,59 +17,68 @@ class AddPostScreen extends StatefulWidget {
 }
 
 class _AddPostScreenState extends State<AddPostScreen> {
-  @override
   final TextEditingController _descriptionController = TextEditingController();
-    final ImagePicker _picker = ImagePicker();
-    String? _image;
-    Uint8List? _imageBytes;
-    List<String> categories = ["Jalan Rusak", "Lampu Jalan Mati", "Lawan Arah", "Merokok di Jalan", "Tidak Pakai Helm"];
-    String? _category;
-    String? _latitude;
-    String? _longitude;
+  final ImagePicker _picker = ImagePicker();
+  String? _image;
+  Uint8List? _imageBytes;
+  List<String> categories = [
+    "Jalan Rusak",
+    "Lampu Jalan Mati",
+    "Lawan Arah",
+    "Merokok di Jalan",
+    "Tidak Pakai Helm",
+  ];
+  String? _category;
+  String? _latitude;
+  String? _longitude;
+  bool _isSubmitting = false;
+  bool _isGettingLocation = false;
 
-    Future<void> pickAndConvertThenCompressImage() async {
-      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+  Future<void> pickAndConvertThenCompressImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
 
-      if (image != null) {
-        final bytes = await image.readAsBytes();
+    if (image != null) {
+      final bytes = await image.readAsBytes();
 
-        var result = await FlutterImageCompress.compressWithList(
-          bytes,
-          quality: 80,
-          minWidth: 1280,
-          minHeight: 1280,
-        );
+      var result = await FlutterImageCompress.compressWithList(
+        bytes,
+        quality: 80,
+        minWidth: 1280,
+        minHeight: 1280,
+      );
 
-        final encodedResult = base64Encode(result);
+      final encodedResult = base64Encode(result);
 
-        setState(() {
-          _image = encodedResult;
-          _imageBytes = result;
-        });
-      }
+      setState(() {
+        _image = encodedResult;
+        _imageBytes = result;
+      });
     }
-    
-    void _showCategorySelector(){
-      showModalBottomSheet(context: context, builder: (context) {
+  }
+
+  void _showCategorySelector() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
         return ListView(
           shrinkWrap: true,
-          children:
-            categories.map((cat) {
-              return ListTile(
-                title: Text(cat),
-                onTap: () {
-                  setState(() {
-                    _category = cat;
-                  });
-                  Navigator.pop(context);
-                },
-              );
-            }).toList()
+          children: categories.map((cat) {
+            return ListTile(
+              title: Text(cat),
+              onTap: () {
+                setState(() {
+                  _category = cat;
+                });
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
         );
-      },);
-    }
+      },
+    );
+  }
 
-    Future<void> _getLocation() async {
+  Future<void> _getLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
@@ -89,6 +98,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
           return;
         }
       }
+      setState(() {
+          _isGettingLocation = true;
+      });
       final position = await Geolocator.getCurrentPosition(
         locationSettings: LocationSettings(accuracy: LocationAccuracy.high),
       ).timeout(const Duration(seconds: 10));
@@ -98,6 +110,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
         _longitude = position.longitude.toString();
       });
     } catch (e) {
+      setState(() {
+          _isGettingLocation = false;
+        });
       debugPrint("Failed to retrieve location : $e");
       ScaffoldMessenger.of(
         context,
@@ -109,7 +124,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
     }
   }
 
-    Future<void> _submit () async {
+  Future<void> _submit() async {
     if (_image == null || _descriptionController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -124,8 +139,10 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
     final userId = FirebaseAuth.instance.currentUser?.uid;
     final fullName = FirebaseAuth.instance.currentUser?.displayName;
-
-    try{
+    setState(() {
+      _isSubmitting = true;
+    });
+    try {
       await _getLocation();
       FasumService.addPost(
         Post(
@@ -136,71 +153,118 @@ class _AddPostScreenState extends State<AddPostScreen> {
           image: _image,
           latitude: _latitude,
           longitude: _longitude,
-        )
-      ).whenComplete((){
+        ),
+      ).whenComplete(() {
+        setState(() {
+          _isSubmitting = false;
+        });
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            "Data berhasil ditambahkan",
+          SnackBar(
+            content: Text("Data berhasil ditambahkan"),
+            backgroundColor: const Color(0xFF1B5E20),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
-          backgroundColor: const Color(0xFF1B5E20),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),  
-      );
+        );
       });
-    }catch(e){
+    } catch (e) {
+      setState(() {
+          _isSubmitting = false;
+        });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            "Terjadi Error : $e",
-          ),
+          content: Text("Terjadi Error : $e"),
           backgroundColor: const Color(0xFF1B5E20),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
     }
+  }
+  @override
 
-    }
   Widget build(BuildContext context) {
-    
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Post Cepu"),
-      ),
-      body: Column(
-        children: [
-          TextFormField(
-            controller: _descriptionController,
-          ),
-          TextButton(onPressed: (){
-            _showCategorySelector();
-          }, child: Text("Category")),
-          Expanded(
-            child: _imageBytes != null
-                ? Image.memory(_imageBytes!, fit: BoxFit.cover, height: 150)
-                : Center(child: Text("No image selected")),
-          ),
-          ElevatedButton(
-            onPressed: pickAndConvertThenCompressImage,
-            child: Text("Pick Image"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              _getLocation();
-            },
-            child: Text("Get Current Location"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              _submit();
-            },
-            child: Text("Submit"),
-          )
-        ],
+      appBar: AppBar(title: Text("Add new post")),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _imageBytes == null
+                ? Container(
+                    height: 180,
+                    width: double.infinity,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade400),
+                    ),
+                    child: const Text('Belum ada gambar dipilih'),
+                  )
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.memory(
+                      _imageBytes!,
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: _isSubmitting ? null : pickAndConvertThenCompressImage,
+              child: const Text('Pick Image'),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: _isSubmitting ? null : _showCategorySelector,
+              child: const Text('Select Category'),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _category ?? 'Belum memilih kategori',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _descriptionController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Deskripsi',
+                hintText: 'Masukkan deskripsi laporan',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: (_isSubmitting || _isGettingLocation)
+                  ? null
+                  : _getLocation,
+              child: Text(
+                _isGettingLocation ? 'Mengambil Lokasi...' : 'Get Location',
+              ),
+            ),
+            const SizedBox(height: 8),
+            _latitude == null || _longitude == null
+                ? const Text('Lokasi belum diambil', textAlign: TextAlign.center,)
+                : Text(
+                    'Lat: $_latitude\nLng: $_longitude',
+                    textAlign: TextAlign.center,
+                  ),
+
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _isSubmitting ? null : _submit,
+              child: Text(_isSubmitting ? 'Submitting...' : 'Submit'),
+            ),
+          ],
+        ),
       ),
     );
   }

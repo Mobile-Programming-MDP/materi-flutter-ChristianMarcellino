@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fasum_app/models/post.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FasumService{
   static final FirebaseFirestore _database = FirebaseFirestore.instance;
   static final CollectionReference _postsCollection = _database.collection(
     "posts",
   );
+  static final currentUser = FirebaseAuth.instance.currentUser;
 
   static Future<void> addPost(Post post) async {
     Map<String, dynamic> newPost = {
@@ -22,7 +24,7 @@ class FasumService{
     await _postsCollection.add(newPost);
   }
 
-  static Stream<List<Post>> getNoteList() {
+  static Stream<List<Post>> getPostList() {
     return _postsCollection.snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
@@ -46,7 +48,7 @@ class FasumService{
     });
   }
 
-  static Future<void> updateNote(Post post) async {
+  static Future<void> updatePost(Post post) async {
     Map<String, dynamic> updatedPost = {
       "category": post.category,
       "description": post.description,
@@ -60,7 +62,7 @@ class FasumService{
     await _postsCollection.doc(post.id).update(updatedPost);
   }
 
-  static Future<void> deleteNote(Post post) async {
+  static Future<void> deletePost(Post post) async {
     await _postsCollection.doc(post.id).delete();
   }
   

@@ -180,11 +180,7 @@ class _NoteDialogState extends State<NoteDialog> {
             padding: EdgeInsets.only(top: 20),
             child: Text("Image: "),
           ),
-          Expanded(
-            child: _imageBytes != null
-                ? Image.memory(_imageBytes!, fit: BoxFit.cover, height: 150)
-                : Center(child: Text("No image selected")),
-          ),
+          _imageBytes == null ? : 
           ElevatedButton(
             onPressed: pickAndConvertThenCompressImage,
             child: Text("Pick Image"),

@@ -22,11 +22,43 @@ class _HomeScreenState extends State<HomeScreen> {
       (route) => false,
     );
   }
+  String? _selectedCategory = "All";
+  List<String> categories = [
+    "All",
+    "Jalan Rusak",
+    "Lampu Jalan Mati",
+    "Lawan Arah",
+    "Merokok di Jalan",
+    "Tidak Pakai Helm",
+  ];
+
 
   //Fungsi untuk membuat url foto profile / avatar
   String generateAvatarUrl(String? fullName) {
     final formattedName = fullName!.trim().replaceAll(' ', '+');
     return 'https://ui-avatars.com/api/?name=$formattedName&color=FFFFFF&background=000000';
+  }
+
+  void _showCategorySelector() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return ListView(
+          shrinkWrap: true,
+          children: categories.map((cat) {
+            return ListTile(
+              title: Text(cat),
+              onTap: () {
+                setState(() {
+                  _selectedCategory = cat;
+                });
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
+        );
+      },
+    );
   }
 
   @override
@@ -43,6 +75,14 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.logout),
             tooltip: "Sign Out",
           ),
+          IconButton(
+            onPressed: () {
+              _showCategorySelector();
+            },
+            icon: Icon(Icons.filter),
+            tooltip: "Filter",
+          )
+          
         ],
       ),
       body: Column(
@@ -64,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const Divider(),
           Expanded(
             child: StreamBuilder(
-              stream: FasumService.getPostList(),
+              stream:FasumService.getPostByCategory(_selectedCategory!),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());

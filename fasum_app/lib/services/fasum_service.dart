@@ -48,6 +48,53 @@ class FasumService{
     });
   }
 
+  static Stream<List<Post>> getPostByCategory(String category) {
+    if(category == "All"){
+      return _postsCollection.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return Post(
+          id: doc.id,
+          category: data["category"],
+          description: data["description"],
+          image: data["image"],
+          createdAt: data["created_at"] != null
+              ? data["created_at"] as Timestamp
+              : null,
+          updatedAt: data["updated_at"] != null
+              ? data["updated_at"] as Timestamp
+              : null,
+          latitude: data["latitude"],
+          longitude: data["longitude"],
+          fullName : data["full_name"],
+          userId : data["user_id"]
+        );
+      }).toList();
+    });
+    }
+    return _postsCollection.where("category", isEqualTo: category).snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return Post(
+          id: doc.id,
+          category: data["category"],
+          description: data["description"],
+          image: data["image"],
+          createdAt: data["created_at"] != null
+              ? data["created_at"] as Timestamp
+              : null,
+          updatedAt: data["updated_at"] != null
+              ? data["updated_at"] as Timestamp
+              : null,
+          latitude: data["latitude"],
+          longitude: data["longitude"],
+          fullName : data["full_name"],
+          userId : data["user_id"]
+        );
+      }).toList();
+    });
+  }
+
   static Future<void> updatePost(Post post) async {
     Map<String, dynamic> updatedPost = {
       "category": post.category,

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:fasum_app/models/post.dart';
+import 'package:fasum_app/screens/map_detail_screen.dart';
 import 'package:fasum_app/services/fasum_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -119,6 +120,11 @@ class DetailScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+                        TextButton(onPressed: (){
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => MapDetailScreen(post: post,)),
+                          );
+                        }, child: const Text("View on Map"))
                   ],
                 ],
               ),

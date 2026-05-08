@@ -30,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
     "Lawan Arah",
     "Merokok di Jalan",
     "Tidak Pakai Helm",
+    "Lainnya"
   ];
 
 

@@ -5,9 +5,11 @@ import 'package:fasum_app/models/post.dart';
 import 'package:fasum_app/services/fasum_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 
 class AddPostScreen extends StatefulWidget {
   const AddPostScreen({super.key});
@@ -21,18 +23,21 @@ class _AddPostScreenState extends State<AddPostScreen> {
   final ImagePicker _picker = ImagePicker();
   String? _image;
   Uint8List? _imageBytes;
+  bool _isGenerating = false;
   List<String> categories = [
     "Jalan Rusak",
     "Lampu Jalan Mati",
     "Lawan Arah",
     "Merokok di Jalan",
     "Tidak Pakai Helm",
+    "Lainnya"
   ];
   String? _category;
   String? _latitude;
   String? _longitude;
   bool _isSubmitting = false;
   bool _isGettingLocation = false;
+
 
   Future<void> pickAndConvertThenCompressImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
@@ -52,6 +57,95 @@ class _AddPostScreenState extends State<AddPostScreen> {
       setState(() {
         _image = encodedResult;
         _imageBytes = result;
+      });
+    }
+  }
+
+  Future<void> _generateDescriptionWithAI() async {
+    if(_image == null){
+      return;
+    }
+
+    setState(() {
+      _isGenerating = true;
+    });
+    try{
+      String apiKey = dotenv.env["API_KEY"] ?? '';
+      String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=$apiKey";
+      final body = jsonEncode({
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": """
+            Berdasarkan foto ini, identifikasi satu kategori utama kerusakan fasilitas umum dari daftar berikut:
+            - Jalan Rusak
+            - Lampu Jalan Mati
+            - Lawan Arah
+            - Merokok di Jalan
+            - Tidak Pakai Helm
+            - Lainnya
+
+            Pilih kategori yang paling dominan atau paling mendesak untuk dilaporkan.
+
+            Buat deskripsi singkat untuk laporan perbaikan dan tambahkan permohonan perbaikan.
+
+            Fokus pada kerusakan yang terlihat dan hindari spekulasi.
+
+            Format output:
+
+            Kategori: [kategori]
+            Deskripsi: [deskripsi]
+            """
+                    },
+                    {
+                      "inline_data": {
+                        "mime_type": "image/jpeg",
+                        "data": _image,
+                      }
+                    }
+                  ]
+                }
+              ]
+            });
+      final headers = {'Content-Type' : 'application/json'};
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers,
+        body:body
+      );
+      if(response.statusCode == 200){
+        final jsonResponse = jsonDecode(response.body);
+        final text = jsonResponse["candidates"][0]['content']['parts'][0]['text'];
+        print(text);
+        if(text!= null && text.isNotEmpty){
+          final lines = text.trim().split('\n');
+          String? aiCategory;
+          String? aiDescription;
+          for(var line in lines){
+            final lower = line.toLowerCase();
+            if(lower.startsWith('kategori:')){
+              aiCategory = line.substring(9).trim();
+            }else if (lower.startsWith('deskripsi:')){
+              aiDescription = line.substring(11).trim();
+            }
+          }
+          aiDescription ??= text.trim();
+          setState(() {
+            _category = aiCategory ?? "Lainnya";
+            _descriptionController.text = aiDescription!;
+          });
+
+        }
+      }
+      else{
+          debugPrint("Request Failed : ${response.body}");
+        }
+    } catch (e){
+      debugPrint("Failed to generate AI description : $e");
+    } finally{
+      setState(() {
+        _isGenerating = false;
       });
     }
   }
@@ -123,7 +217,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
         _latitude = null;
         _longitude = null;
       });
-    }
+    } 
   }
 
   Future<void> _submit() async {
@@ -186,6 +280,11 @@ class _AddPostScreenState extends State<AddPostScreen> {
       );
     }
   }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
   @override
 
   Widget build(BuildContext context) {
@@ -232,6 +331,14 @@ class _AddPostScreenState extends State<AddPostScreen> {
               _category ?? 'Belum memilih kategori',
               textAlign: TextAlign.center,
               style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            OutlinedButton(
+              onPressed: (_isGenerating || _isSubmitting)
+                  ? null
+                  : _generateDescriptionWithAI,
+              child: Text(
+                _isGenerating ? 'Membuat Deskripsi...' : 'Buat Deskripsi',
+              ),
             ),
             const SizedBox(height: 16),
             TextField(

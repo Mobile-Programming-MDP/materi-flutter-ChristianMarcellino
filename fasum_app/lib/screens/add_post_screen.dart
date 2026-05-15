@@ -150,6 +150,36 @@ class _AddPostScreenState extends State<AddPostScreen> {
     }
   }
 
+  Future<void> sendNotificationToTopic(String body, String sendername) async {
+    final url = Uri.parse("https://fasum-cloud-nkjt.vercel.app");
+    final response = await http.post(
+      url,
+      headers: {
+        "Content-Type" : "application/json"
+      },
+      body: jsonEncode({
+        "topic" : "berita-fasum",
+        "title" : "🔔Laporan Baru",
+        "body" : body,
+        "senderName" : sendername,
+        "senderPhotoUrl" : "https://i.pinimg.com/originals/64/fd/9e/64fd9e71b07a0ea2f87ee45d2a65ceb2.jpg?nii=t"
+      })
+    );
+    if(response.statusCode == 200 ){
+      if(mounted){
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Notification Sent"))
+        );
+      }
+    }else {
+      if(mounted){
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to send notification"))
+        );
+      }
+    }
+  }
+
   void _showCategorySelector() {
     showModalBottomSheet(
       context: context,
@@ -254,6 +284,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
         setState(() {
           _isSubmitting = false;
         });
+        sendNotificationToTopic(_descriptionController.text, fullName!);
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -6,13 +6,14 @@ import 'package:fasum_app/screens/sign_in_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-
+String get webVapidKey => dotenv.env["VAPID_KEY"] ?? "";
 Future<void> requestNotificationPermission() async {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
   NotificationSettings settings = await messaging.requestPermission(
@@ -40,7 +41,7 @@ Future<void> showBasicNotification(String? title, String? body) async {
     showWhen: true
   );
   final platform = NotificationDetails(android: android);
-  await flutterLocalNotificationsPlugin.show(id:0,title: title,body: body, notificationDetails: platform);
+  await flutterLocalNotificationsPlugin.show(id:DateTime.now().millisecondsSinceEpoch.remainder(100000),title: title,body: body, notificationDetails: platform);
 }
 
 Future<String?> _networkImageToBase64(String url) async {
@@ -91,11 +92,12 @@ Future<void> showNotificationFromData(Map<String,dynamic> data)async{
       showWhen: true
     );
     final platform = NotificationDetails(android:androidDetails);
-    await flutterLocalNotificationsPlugin.show(id: 1, title: title, body: body, notificationDetails: platform);
+    await flutterLocalNotificationsPlugin.show(id: DateTime.now().millisecondsSinceEpoch.remainder(100000), title: title, body: body, notificationDetails: platform);
 } 
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
+  debugPrint('Handling background message: ${message.messageId}');
   if(message.data.isNotEmpty){
     await showNotificationFromData(message.data);
   }else{
@@ -111,8 +113,38 @@ void main() async {
   await requestNotificationPermission();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  const AndroidInitializationSettings androidInit = AndroidInitializationSettings('mipmap/ic_launcher');
-  final InitializationSettings settings = InitializationSettings(android: androidInit, iOS: DarwinInitializationSettings());
+  const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const DarwinInitializationSettings iosInit = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+  final InitializationSettings settings = InitializationSettings(android: androidInit, iOS: iosInit);
+    await flutterLocalNotificationsPlugin.initialize(settings: settings);
+
+    const AndroidNotificationChannel defaultChannel =
+        AndroidNotificationChannel(
+          'default_channel',
+          'Notifikasi Default',
+          description: 'Notifikasi masuk dari FCM',
+          importance: Importance.high,
+        );
+
+    const AndroidNotificationChannel detailedChannel =
+        AndroidNotificationChannel(
+          'detailed_channel',
+          'Notifikasi Detail',
+          description: 'Notifikasi dengan detail tambahan',
+          importance: Importance.max,
+        );
+
+    final androidPlugin = flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+
+    await androidPlugin?.createNotificationChannel(defaultChannel);
+    await androidPlugin?.createNotificationChannel(detailedChannel);
   await flutterLocalNotificationsPlugin.initialize(settings: settings);
   runApp(const MyApp());
 }
@@ -129,28 +161,79 @@ class _MyAppState extends State<MyApp> {
   String topic = "berita-fasum";
   
   void setupFirebaseMessaging() async {
-    String? token = await FirebaseMessaging.instance.getToken();
-    print("FCM TOKEN : $token");
+    final messaging = FirebaseMessaging.instance;
+    try {
+      final fcmToken = kIsWeb
+          ? await messaging.getToken(vapidKey: webVapidKey)
+          : await messaging.getToken();
+      debugPrint("FCM Token: $fcmToken");
 
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
-    await messaging.subscribeToTopic(topic);
-    setState(() {
-      status = "Subscribed to topic :$topic";
+      if (fcmToken == null) {
+        setState(() {
+          status = "Gagal mendapatkan token FCM";
+        });
+        return;
+      } else {
+        setState(() {
+          status = "Token FCM berhasil didapatkan";
+        });
+      }
+    } catch (e) {
+      setState(() {
+        status = "Error token FCM: $e";
+      });
+      debugPrint("Error getToken: $e");
+      return;
+    }
+
+    messaging.onTokenRefresh.listen((token) {
+      debugPrint("FCM token refreshed: $token");
     });
-    FirebaseMessaging.onMessage.listen((RemoteMessage message){
-      if(message.data.isNotEmpty){
-        showNotificationFromData(message.data);
-      }else {
-        showBasicNotification(message.notification!.title, message.notification!.body);
+
+    if (!kIsWeb) {
+      try {
+        await messaging.subscribeToTopic(topic);
+        setState(() {
+          status = "Subscribe to topic: $topic";
+        });
+        debugPrint("Subscribed to topic: $topic");
+      } catch (e) {
+        setState(() {
+          status = "Error subscribe topic: $e";
+        });
+        debugPrint("Error subscribing to topic: $e");
+      }
+    } else {
+      setState(() {
+        status = "Web siap menerima notifikasi";
+      });
+    }
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint('Received foreground message: ${message.messageId}');
+
+      if (kIsWeb) {
+        // For web, just log the message - browser handles notifications
+        debugPrint('Web notification: ${message.notification?.title}');
+      } else {
+        // For Android/iOS, show local notification
+        if (message.data.isNotEmpty) {
+          showNotificationFromData(message.data);
+        } else if (message.notification != null) {
+          showBasicNotification(
+            message.notification!.title,
+            message.notification!.body,
+          );
+        }
       }
     });
-
   }
+
 
   @override
   void initState() {
     super.initState();
-    setupFirebaseMessaging;
+    setupFirebaseMessaging();
   }
   @override
   Widget build(BuildContext context) {
